@@ -12,6 +12,7 @@ import (
 
 	"github.com/gergelymark/mozaik/pkg/config"
 	"github.com/gergelymark/mozaik/pkg/mozaik"
+	"github.com/gergelymark/mozaik/pkg/spa"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
@@ -179,6 +180,11 @@ func main() {
 		}
 		w.WriteHeader(http.StatusOK)
 	}).Methods("DELETE")
+
+	handler := spa.SpaHandler("static", "index.html")
+	r.PathPrefix("/").HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		handler.ServeHTTP(rw, r)
+	})
 
 	webserver := &http.Server{
 		Addr:         ":5001",
