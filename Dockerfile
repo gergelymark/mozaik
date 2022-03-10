@@ -47,6 +47,6 @@ FROM ${DISTROLESS_IMAGE}
 WORKDIR /opt/mozaik
 COPY --from=go-builder /opt/mozaik/mozaik .
 COPY --from=node-builder /opt/mozaik/dist ./static
-COPY assets /opt/mozaik/assets
+COPY golang/assets /opt/mozaik/assets
 CMD ["/opt/mozaik/mozaik"]
 

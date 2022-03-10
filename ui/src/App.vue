@@ -7,7 +7,10 @@
       dark
     >
       <div class="d-flex align-center">
-        Mozaik        
+        <v-img 
+          src="/Mozaik-logos_white.png" 
+          width="48"
+        />
       </div>
       <v-btn
         icon
