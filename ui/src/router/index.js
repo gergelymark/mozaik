@@ -19,7 +19,13 @@ const routes = [
     path: '/mozaik/:name',
     name: 'mozaik',
     component: () => import(/* webpackChunkName: "about" */ '../views/Mozaik.vue')
-  }
+  },
+  {
+    path: '/parts',
+    name: 'parts',
+    component: () => import(/* webpackChunkName: "about" */ '../views/Parts.vue')
+  },
+
 ]
 
 const router = new VueRouter({

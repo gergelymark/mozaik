@@ -12,6 +12,7 @@ export default new Vuex.Store({
     mozaiks: [],
     createRequested: "",
     mozaik: {},
+    parts: [],
   },
   getters: {
   },
@@ -33,6 +34,9 @@ export default new Vuex.Store({
     },
     mozaik(state, mozaik) {
       state.mozaik = mozaik
+    },
+    parts(state, parts) {
+      state.parts = parts
     }
   },
   actions: {
@@ -50,6 +54,10 @@ export default new Vuex.Store({
     async fetchMozaik(context, id) {
       const resp = await axios.get(`/api/mozaik/${id}`)
       context.commit("mozaik", resp.data)
+    },
+    async fetchParts(context) {
+      const resp = await axios.get(`/api/parts/`)
+      context.commit("parts", resp.data)
     },
     async save(context) {
       await axios.put("/api/mozaik/", context.state.mozaik)

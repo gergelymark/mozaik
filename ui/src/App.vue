@@ -6,18 +6,19 @@
       clipped-left
       dark
     >
-      <div class="d-flex align-center">
+      <a href="/" class="d-flex align-center">
         <v-img 
+          to="/"
           src="/Mozaik-logos_white.png" 
           width="48"
         />
-      </div>
+      </a>
       <v-btn
         icon
-        to="/"
+        to="/parts/"
         class="ml-6"        
       >
-        <v-icon>mdi-home</v-icon>
+        <v-icon>mdi-format-list-bulleted-square</v-icon>
       </v-btn>
       <v-btn
         text

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gergelymark/mozaik/pkg/config"
+	"github.com/gergelymark/mozaik/pkg/items"
 	"github.com/gergelymark/mozaik/pkg/mozaik"
 	"github.com/gergelymark/mozaik/pkg/spa"
 	"github.com/gorilla/handlers"
@@ -33,7 +34,33 @@ func main() {
 	r.Use(func(h http.Handler) http.Handler {
 		return handlers.LoggingHandler(os.Stdout, h)
 	})
-	r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
+	// r.Use(handlers.RecoveryHandler(handlers.PrintRecoveryStack(true)))
+
+	// Needed Part api
+	r.HandleFunc("/api/parts/", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		app, err := items.New()
+		if err != nil {
+			log.Println("loginfailed", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		legoItems, err := app.NeededItems()
+		if err != nil {
+			log.Println("item fetch failed", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		resp, err := json.Marshal(legoItems)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(200)
+		w.Write(resp)
+	}).Methods("GET")
 
 	// Colors API
 	r.HandleFunc("/api/colors/", func(w http.ResponseWriter, r *http.Request) {
