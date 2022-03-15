@@ -14,6 +14,9 @@
                 ></v-text-field>
             </v-card-title>
             <v-data-table
+                show-expand
+                item-key="ID"
+                single-expand
                 :items-per-page="-1"
                 :hide-default-footer="true"
                 :headers="headers"
@@ -21,19 +24,37 @@
                 :search="search"
             >
             <template
-                v-slot:body="{ items }"
+                v-slot:item="{ item, expand, isExpanded }"
             >
-                <tbody>
-                    <tr
-                        v-for="item in items"
-                        :key="item.name"
-                    >
-                        <td style="text-align:center"><v-avatar><v-img :src="`https:${item.ImgURL}`" /></v-avatar></td>
-                        <td v-html="item.WantedQty" />
-                        <td v-html="item.ColorName" />
-                        <td v-html="item.ItemName" />
-                    </tr>
-                </tbody>
+                <tr>
+                    <td style="text-align:center"><v-img width="64" :src="`https:${item.ImgURL}`" /></td>
+                    <td v-html="item.WantedQty" />
+                    <td v-html="item.InStock" />
+                    <td v-html="item.ColorName" />
+                    <td v-html="item.ItemName" />
+                    <td>
+                        <v-btn 
+                            icon
+                            text
+                            @click="expand(!isExpanded)"
+                        >
+                            <v-icon v-html="isExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'" />
+                        </v-btn>                            
+                    </td>
+                </tr>
+            </template>
+            <template v-slot:expanded-item="{ headers, item }">
+                <td :colspan="headers.length">
+                    <div class="inset">
+                        <table>
+                            <tr v-for="legoSet in item.LegoSets"
+                                :key="`set-${legoSet.ID}`">
+                                <td v-html="legoSet.Name" />
+                                <td v-html="legoSet.PartQty" class="text-right"/>
+                            </tr>
+                        </table>
+                    </div>                    
+                </td>
             </template>
 
             </v-data-table>
@@ -55,8 +76,10 @@
             width: "150px"
           },          
           { text: 'Amount', value: 'WantedQty', width: "150px" },
+          { text: 'In Stock', value: 'InStock', width: "150px" },
           { text: 'Color', value: 'ColorName' },
           { text: 'Name', value: 'ItemName' },
+          { text: '', value: 'data-table-expand' },
         ],
     }),
     computed: {
@@ -72,3 +95,13 @@
     }
   }
 </script>
+<style scoped>
+    .inset {
+        box-shadow: inset 0 4px 8px -5px rgb(50 50 50 / 75%), inset 0 -4px 8px -5px rgb(50 50 50 / 75%) ! important;
+        padding: 10px;
+    }
+    .inset td {
+        padding: 5px;
+        padding-left: 20px;
+    }
+</style>

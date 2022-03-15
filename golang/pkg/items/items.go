@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -28,14 +29,23 @@ type App struct {
 
 type WantedParts map[string]LegoItem
 
+type LegoSet struct {
+	ID      int
+	Name    string
+	PartQty int
+}
+
 type LegoItem struct {
+	ID        string
 	ItemName  string
 	ItemID    int
 	ColorID   int
 	ColorHex  string
 	ColorName string
 	WantedQty int
+	InStock   int
 	ImgURL    string
+	LegoSets  []LegoSet
 }
 
 type WantedItems struct {
@@ -54,6 +64,10 @@ type WantedLists struct {
 const (
 	baseURL string = "https://www.bricklink.com"
 )
+
+func (legoItem LegoItem) GetID() string {
+	return fmt.Sprintf("%d-%d", legoItem.ItemID, legoItem.ColorID)
+}
 
 func (app *App) login() error {
 	client := app.Client
@@ -98,6 +112,7 @@ func (app App) NeededItems() ([]LegoItem, error) {
 	if len(match) > 0 {
 		jsonData = match[1]
 	}
+	log.Println("Status:", response.Status)
 	var wantedLists WantedLists
 	err = json.Unmarshal([]byte(jsonData), &wantedLists)
 	if err != nil {
@@ -125,13 +140,19 @@ func (app App) NeededItems() ([]LegoItem, error) {
 		}
 
 		for _, wantedItem := range wantedItems.WantedItems {
-			legoItem, ok := wantedParts[wantedItem.ItemName]
+			legoItem, ok := wantedParts[wantedItem.GetID()]
 			if !ok {
 				legoItem = wantedItem
+				legoItem.ID = legoItem.GetID()
 			} else {
 				legoItem.WantedQty = legoItem.WantedQty + wantedItem.WantedQty
 			}
-			wantedParts[wantedItem.ItemName] = legoItem
+			legoItem.LegoSets = append(legoItem.LegoSets, LegoSet{
+				ID:      wantedList.ID,
+				Name:    wantedList.Name,
+				PartQty: wantedItem.WantedQty,
+			})
+			wantedParts[wantedItem.GetID()] = legoItem
 		}
 	}
 
