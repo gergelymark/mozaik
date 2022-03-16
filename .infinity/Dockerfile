@@ -1,4 +1,4 @@
-ARG  GO_BUILDER_IMAGE=golang:1.17-bullseye
+ARG  GO_BUILDER_IMAGE=golang:1.18-bullseye
 ARG  NODE_BUILDER_IMAGE=node:16-bullseye
 # ARG  DISTROLESS_IMAGE=gcr.io/distroless/static:nonroot
 ARG  DISTROLESS_IMAGE=gcr.io/distroless/static:nonroot
@@ -27,7 +27,7 @@ RUN yarn install
 ############################
 FROM go-base as go-builder
 COPY golang .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
       -ldflags='-w -s -extldflags "-static"' -a \
       -o mozaik ./cmd/mozaik/mozaik.go
 
