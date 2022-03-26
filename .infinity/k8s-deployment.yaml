@@ -1,0 +1,25 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mozaik
+  namespace: infinity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mozaik
+  template:
+    metadata:
+      labels:
+        app: mozaik
+    spec:
+      containers:
+      - image: docker.ownr.io/mozaik
+        imagePullPolicy: Always
+        name: mozaik
+        ports:
+        - containerPort: 5001
+          protocol: TCP
+      restartPolicy: Always
+

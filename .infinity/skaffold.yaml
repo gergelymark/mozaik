@@ -1,0 +1,30 @@
+apiVersion: skaffold/v2beta21
+kind: Config
+build:
+  cluster: {
+    namespace: "infinity-build",
+    pullSecretName: ownr.io-registry-secret,
+    pullSecretPath: /kaniko/.docker/config.json,
+    nodeSelector: {
+      kubernetes.io/hostname: "excellent.ownr.io"
+    }
+  }
+  tagPolicy:
+    sha256: {}
+  artifacts:
+    - image: docker.ownr.io/mozaik
+      kaniko:
+        volumeMounts:
+          - name: kaniko-secret
+            mountpath: /kaniko/.docker
+        useNewRun: true
+        insecureRegistry:
+          - "infinityregistry.infinity.svc.cluster.local:5000"
+        dockerfile: .infinity/Dockerfile
+        cache:
+          repo: "infinityregistry.infinity.svc.cluster.local:5000/infinity/cache"
+        skipTLS: true
+deploy:
+  kubectl:
+    manifests:
+      - .infinity/k8s-*

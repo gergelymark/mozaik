@@ -16,6 +16,7 @@ import (
 var (
 	lastRequestTime time.Time
 	legoItems       []LegoItem
+	jsonRegexp      *regexp.Regexp = regexp.MustCompile(`var wlJson = (\{.+?\});\r?\n`)
 )
 
 func init() {
@@ -35,6 +36,8 @@ type LegoSet struct {
 	PartQty int
 }
 
+type Stock map[string]int
+
 type LegoItem struct {
 	ID        string
 	ItemName  string
@@ -49,7 +52,8 @@ type LegoItem struct {
 }
 
 type WantedItems struct {
-	WantedItems []LegoItem
+	WantedItems  []LegoItem
+	TotalResults int
 }
 
 type WantedListInfo struct {
@@ -62,8 +66,55 @@ type WantedLists struct {
 }
 
 const (
-	baseURL string = "https://www.bricklink.com"
+	baseURL  string = "https://www.bricklink.com"
+	pageSize int    = 100
 )
+
+func (wantedLists WantedLists) GetWantedItems(app App, ID int) (WantedItems, error) {
+	wantedItems := WantedItems{}
+	page := 1
+	for {
+		var itemsOnPage WantedItems
+
+		response, err := app.Client.Get(baseURL + fmt.Sprintf("/v2/wanted/search.page?type=A&wantedMoreID=%d&sort=1&pageSize=%d&page=%d", ID, pageSize, page))
+		if err != nil {
+			return WantedItems{}, err
+		}
+		defer response.Body.Close()
+		responseData, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return wantedItems, err
+		}
+		jsonData := jsonRegexp.FindStringSubmatch(string(responseData))[1]
+		err = json.Unmarshal([]byte(jsonData), &itemsOnPage)
+		if err != nil {
+			return WantedItems{}, err
+		}
+
+		wantedItems.WantedItems = append(wantedItems.WantedItems, itemsOnPage.WantedItems...)
+		wantedItems.TotalResults = itemsOnPage.TotalResults
+		if len(wantedItems.WantedItems) == itemsOnPage.TotalResults {
+			break
+		}
+		page = page + 1
+	}
+
+	return wantedItems, nil
+}
+
+func (wantedLists WantedLists) GetStock(app App) (Stock, error) {
+	stock := Stock{}
+	inStock, err := wantedLists.GetWantedItems(app, 7154778)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, wantedItem := range inStock.WantedItems {
+		stock[wantedItem.GetID()] = wantedItem.WantedQty
+	}
+
+	return stock, nil
+}
 
 func (legoItem LegoItem) GetID() string {
 	return fmt.Sprintf("%d-%d", legoItem.ItemID, legoItem.ColorID)
@@ -121,20 +172,17 @@ func (app App) NeededItems() ([]LegoItem, error) {
 
 	wantedParts := WantedParts{}
 
+	stock, err := wantedLists.GetStock(app)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, wantedList := range wantedLists.WantedLists {
-		response, err := app.Client.Get(baseURL + fmt.Sprintf("/v2/wanted/search.page?type=A&wantedMoreID=%d&sort=1&pageSize=100&page=%d", wantedList.ID, 1))
-		if err != nil {
-			return nil, err
-		}
-		defer response.Body.Close()
-		responseData, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return nil, err
+		if wantedList.Name == "Default Wanted List" || wantedList.Name == "raktár készlet" {
+			continue
 		}
 
-		jsonData := r.FindStringSubmatch(string(responseData))[1]
-		var wantedItems WantedItems
-		err = json.Unmarshal([]byte(jsonData), &wantedItems)
+		wantedItems, err := wantedLists.GetWantedItems(app, wantedList.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -144,6 +192,7 @@ func (app App) NeededItems() ([]LegoItem, error) {
 			if !ok {
 				legoItem = wantedItem
 				legoItem.ID = legoItem.GetID()
+				legoItem.InStock = stock[legoItem.GetID()]
 			} else {
 				legoItem.WantedQty = legoItem.WantedQty + wantedItem.WantedQty
 			}

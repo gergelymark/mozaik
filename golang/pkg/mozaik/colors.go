@@ -38,7 +38,7 @@ func (color Color) AsColorful() colorful.Color {
 
 func (baseColor Color) Dist(color color.Color) float64 {
 	r, g, b, _ := color.RGBA()
-	return baseColor.AsColorful().DistanceLab(colorful.Color{
+	return baseColor.AsColorful().DistanceCIEDE2000(colorful.Color{
 		R: float64(uint8(r)) / 255.0,
 		G: float64(uint8(g)) / 255.0,
 		B: float64(uint8(b)) / 255.0,
