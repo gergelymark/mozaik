@@ -21,7 +21,6 @@
                 :hide-default-footer="true"
                 :headers="headers"
                 :items="parts"
-                :search="search"
             >
             <template
                 v-slot:item="{ item, expand, isExpanded }"
@@ -62,11 +61,13 @@
     </v-container>
 </template>
 <script>
+  import lunr from 'lunr'
   export default {
     name: 'PartsView',
     data: () => ({
         loading: true,
         search: "",
+        searchIndex: {},
         headers: [
           {
             text: '',
@@ -83,8 +84,60 @@
         ],
     }),
     computed: {
-        parts() {
+        index() {
+            const that = this
+            return lunr(function () {
+                this.ref('ID')                
+                this.field('color')
+                this.field('ItemName')
+                this.field('size')
+                this.field('type')
+                this.field('subtype')
+                that.allParts.forEach(function (doc) {
+                    let type, size, subtype = ""
+                    const res = doc.ItemName.match(/(.*)(\d+ x \d+)(.*)/)
+                    if (res) {
+                        type = res[1].trim()
+                        size = res[2].trim().replaceAll(" ", "")
+                        subtype = res[3].trim()
+                    } 
+                    console.log(doc.ItemName.match(/(.*)(\d+ x \d+)(.*)/))
+                    this.add({
+                        ID: doc.ID,
+                        color: doc.ColorName,
+                        ItemName: doc.ItemName,
+                        type: type,
+                        size: size,
+                        subtype: subtype,
+                    })
+                }, this)
+            })
+        },
+        allParts() {
             return this.$store.state.parts
+        },
+        parts() {                                    
+            if (!this.search) {
+                return this.allParts
+            }
+            return this.index.search(
+                `${this.search}`
+                ).map(
+                    result => this.allParts.find(
+                        element => element.ID === result.ref
+                )
+            )            
+            // return this.index.search(
+            //     `ColorName:${this.search}^10 `+
+            //     `Type:${this.search}^6` +
+            //     `Subtype:${this.search}^4` +
+            //     `Size:${this.search}^12` +
+            //     `${this.search}^0.1`
+            //     ).map(
+            //         result => this.allParts.find(
+            //             element => element.ID === result.ref
+            //     )
+            // )            
         }
     },
     async mounted() {
